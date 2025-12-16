@@ -10,16 +10,33 @@ npm run dev:web
 
 起動後に `http://localhost:5173` を開いてください。
 
+### 他のスクリプト
+
+- `npm run dev:cli` — 既存のCLIサンプル
+- `npm run build` — TypeScriptビルド
+- `npm run start:web` — `npm run build` 後に生成された `dist/server.js` を起動
+
 ## UIファイル
 
 - `public/index.html`
 - `public/styles.css`
 - `public/app.js`
 
-## データ保存先
+## サーバー構成（学びポイント）
 
-- 既定: `data/todos.json`
-- 変更: `TODO_DATA_PATH=/path/to/todos.json npm run dev:web`
+- `src/server.ts` — HTTPサーバーのエントリーポイント。ハンドラー配列で静的配信とAPIを切り替え。
+- `src/config.ts` — ディレクトリやポートなどの設定を一箇所に集約。
+- `src/http/api.ts` — Todo APIのルーティングとエラーハンドリング。
+- `src/http/static.ts` — `public/` 配下の静的ファイルを安全に返却。
+- `src/todoService.ts` — ファイルストレージを扱うドメインサービス。
+
+シンプルな構成ですが、関心ごとを分離したことでファイルを追いやすくなっています。
+
+## 環境変数
+
+- `PORT` — 既定 `5173`
+- `TODO_DATA_PATH` — 既定 `data/todos.json`
+- `PUBLIC_DIR` — 既定 `public/`
 
 ## API（参考）
 
