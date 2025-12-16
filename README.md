@@ -10,6 +10,12 @@ npm run dev:web
 
 起動後に `http://localhost:5173` を開いてください。
 
+## UIファイル
+
+- `public/index.html`
+- `public/styles.css`
+- `public/app.js`
+
 ## データ保存先
 
 - 既定: `data/todos.json`
@@ -22,4 +28,3 @@ npm run dev:web
 - `PATCH /api/todos/:id`（完了/未完了トグル）
 - `DELETE /api/todos/:id`
 - `DELETE /api/todos`（全削除）
-

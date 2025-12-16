@@ -1,0 +1,90 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial;
+  margin: 0;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+form {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+
+input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, CanvasText 25%, Canvas 75%);
+  border-radius: 10px;
+  background: Canvas;
+  color: CanvasText;
+}
+
+button {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, CanvasText 25%, Canvas 75%);
+  border-radius: 10px;
+  background: color-mix(in oklab, CanvasText 8%, Canvas 92%);
+  color: CanvasText;
+  cursor: pointer;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, CanvasText 18%, Canvas 82%);
+  border-radius: 12px;
+  background: color-mix(in oklab, CanvasText 3%, Canvas 97%);
+}
+
+.title {
+  flex: 1;
+}
+
+.done .title {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.danger {
+  background: color-mix(in oklab, red 12%, Canvas 88%);
+}
+

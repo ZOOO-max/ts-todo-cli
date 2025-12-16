@@ -1,6 +1,7 @@
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFile } from 'node:fs/promises';
 
 import { TodoService } from './todoService.js';
 
@@ -21,6 +22,29 @@ function sendText(res: http.ServerResponse, status: number, body: string, conten
     'cache-control': 'no-store',
   });
   res.end(body);
+}
+
+function contentTypeForPath(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.html') return 'text/html; charset=utf-8';
+  if (ext === '.css') return 'text/css; charset=utf-8';
+  if (ext === '.js') return 'text/javascript; charset=utf-8';
+  if (ext === '.json') return 'application/json; charset=utf-8';
+  return 'application/octet-stream';
+}
+
+async function sendFile(res: http.ServerResponse, filePath: string): Promise<void> {
+  try {
+    const body = await readFile(filePath);
+    res.writeHead(200, {
+      'content-type': contentTypeForPath(filePath),
+      'content-length': body.byteLength.toString(),
+      'cache-control': 'no-store',
+    });
+    res.end(body);
+  } catch {
+    notFound(res);
+  }
 }
 
 async function readBody(req: http.IncomingMessage): Promise<string> {
@@ -45,128 +69,17 @@ function notFound(res: http.ServerResponse): void {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataFilePath = process.env.TODO_DATA_PATH ?? path.join(__dirname, '..', 'data', 'todos.json');
 const todoService = new TodoService(dataFilePath);
-
-const indexHtml = `<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Todo Web</title>
-    <style>
-      :root { color-scheme: light dark; }
-      body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial; margin: 0; }
-      .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
-      h1 { margin: 0 0 16px; font-size: 20px; }
-      form { display: flex; gap: 8px; margin: 12px 0 18px; }
-      input { flex: 1; padding: 10px 12px; border: 1px solid color-mix(in oklab, CanvasText 25%, Canvas 75%); border-radius: 10px; background: Canvas; color: CanvasText; }
-      button { padding: 10px 12px; border: 1px solid color-mix(in oklab, CanvasText 25%, Canvas 75%); border-radius: 10px; background: color-mix(in oklab, CanvasText 8%, Canvas 92%); color: CanvasText; cursor: pointer; }
-      ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
-      li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid color-mix(in oklab, CanvasText 18%, Canvas 82%); border-radius: 12px; background: color-mix(in oklab, CanvasText 3%, Canvas 97%); }
-      .title { flex: 1; }
-      .done .title { text-decoration: line-through; opacity: 0.7; }
-      .meta { font-size: 12px; opacity: 0.7; }
-      .row { display: flex; gap: 8px; align-items: center; }
-      .spacer { flex: 1; }
-      .danger { background: color-mix(in oklab, red 12%, Canvas 88%); }
-    </style>
-  </head>
-  <body>
-    <div class="wrap">
-      <div class="row">
-        <h1>Todo Web</h1>
-        <div class="spacer"></div>
-        <button id="clear" class="danger" type="button">全削除</button>
-      </div>
-      <form id="form">
-        <input id="title" placeholder="例: 牛乳を買う" autocomplete="off" />
-        <button type="submit">追加</button>
-      </form>
-      <div class="meta" id="status"></div>
-      <ul id="list"></ul>
-    </div>
-    <script>
-      const $ = (id) => document.getElementById(id);
-      const listEl = $("list");
-      const statusEl = $("status");
-      const inputEl = $("title");
-      const formEl = $("form");
-      const clearEl = $("clear");
-
-      const api = {
-        list: () => fetch("/api/todos").then(r => r.json()),
-        add: (title) => fetch("/api/todos", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title }) }).then(r => r.json()),
-        toggle: (id) => fetch("/api/todos/" + id, { method: "PATCH" }).then(r => r.json()),
-        del: (id) => fetch("/api/todos/" + id, { method: "DELETE" }).then(r => r.json()),
-        clear: () => fetch("/api/todos", { method: "DELETE" }).then(r => r.json()),
-      };
-
-      function setStatus(text) { statusEl.textContent = text || ""; }
-
-      function render(todos) {
-        listEl.innerHTML = "";
-        for (const t of todos) {
-          const li = document.createElement("li");
-          li.className = t.status === "done" ? "done" : "";
-
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = t.status === "done";
-          checkbox.addEventListener("change", async () => { await api.toggle(t.id); await refresh(); });
-
-          const title = document.createElement("div");
-          title.className = "title";
-          title.textContent = t.title;
-
-          const del = document.createElement("button");
-          del.type = "button";
-          del.className = "danger";
-          del.textContent = "削除";
-          del.addEventListener("click", async () => { await api.del(t.id); await refresh(); });
-
-          li.appendChild(checkbox);
-          li.appendChild(title);
-          li.appendChild(del);
-          listEl.appendChild(li);
-        }
-        setStatus(todos.length ? todos.length + "件" : "（空）Todoはまだない");
-      }
-
-      async function refresh() {
-        const data = await api.list();
-        if (data.error) throw new Error(data.error);
-        render(data.todos || []);
-      }
-
-      formEl.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const title = inputEl.value.trim();
-        if (!title) return;
-        inputEl.value = "";
-        const data = await api.add(title);
-        if (data.error) return setStatus(data.error);
-        await refresh();
-      });
-
-      clearEl.addEventListener("click", async () => {
-        if (!confirm("全て削除します。よろしいですか？")) return;
-        await api.clear();
-        await refresh();
-      });
-
-      refresh().catch((e) => setStatus(String(e)));
-    </script>
-  </body>
-</html>
-`;
+const publicDir = process.env.PUBLIC_DIR ?? path.join(__dirname, '..', 'public');
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const method = (req.method ?? 'GET').toUpperCase();
 
-    if (method === 'GET' && url.pathname === '/') {
-      return sendText(res, 200, indexHtml, 'text/html; charset=utf-8');
-    }
+    if (method === 'GET' && url.pathname === '/') return await sendFile(res, path.join(publicDir, 'index.html'));
+    if (method === 'GET' && url.pathname === '/styles.css') return await sendFile(res, path.join(publicDir, 'styles.css'));
+    if (method === 'GET' && url.pathname === '/app.js') return await sendFile(res, path.join(publicDir, 'app.js'));
+    if (method === 'GET' && url.pathname === '/favicon.ico') return sendText(res, 204, '', 'text/plain; charset=utf-8');
 
     if (url.pathname === '/api/todos' && method === 'GET') {
       const todos = await todoService.list();
